@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState, useCallback } from "react";
+﻿import React, { useCallback, useEffect, useRef, useState } from "react";
 import Sidebar from "./components/Sidebar.jsx";
 import ModelSelector from "./components/ModelSelector.jsx";
 import MessageBubble from "./components/MessageBubble.jsx";
@@ -33,15 +33,20 @@ export default function App() {
   const [webSearch, setWebSearch] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [fatalError, setFatalError] = useState(null);
+  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "dark");
 
   const abortRef = useRef(null);
   const scrollRef = useRef(null);
 
-  // ---- initial load ----
   useEffect(() => {
     refreshModels();
     refreshConversations();
   }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
   useEffect(() => {
     if (!selectedModel && models.length > 0) {
@@ -72,7 +77,7 @@ export default function App() {
       const list = await fetchConversations();
       setConversations(list);
     } catch {
-      // backend may not be up yet; ignore, sidebar just stays empty
+      // Backend may not be up yet; the sidebar can stay empty.
     }
   }
 
@@ -146,19 +151,14 @@ export default function App() {
         signal: controller.signal,
         onToken: (chunk) => {
           assistantText += chunk;
-          setMessages([
-            ...nextMessages,
-            { role: "assistant", content: assistantText },
-          ]);
+          setMessages([...nextMessages, { role: "assistant", content: assistantText }]);
         },
       });
       sources = result.sources;
       searchError = result.searchStatus === "error" ? result.searchError : null;
     } catch (err) {
       if (err.name !== "AbortError") {
-        assistantText =
-          assistantText ||
-          `${err.message || "Something went wrong talking to Ollama."}`;
+        assistantText = assistantText || `${err.message || "Something went wrong talking to Ollama."}`;
       }
     } finally {
       setStreaming(false);
@@ -178,7 +178,7 @@ export default function App() {
           await updateConversation(convoId, { messages: finalMessages });
           refreshConversations();
         } catch {
-          // non-fatal - chat still worked, just didn't persist
+          // Chat still worked; only persistence failed.
         }
       }
     }
@@ -198,18 +198,35 @@ export default function App() {
 
       <main className="main-panel">
         <header className="top-bar">
-          <ModelSelector
-            models={models}
-            selected={selectedModel}
-            onChange={setSelectedModel}
-            loading={modelsLoading}
-            error={modelsError}
-          />
-          {modelsError && (
-            <button className="retry-btn" onClick={refreshModels}>
-              Retry
+          <div className="top-bar-left">
+            <div className="app-title">
+              <span className="app-title-main">Local Chat</span>
+              <span className="app-title-sub">Ollama + SearXNG</span>
+            </div>
+            <ModelSelector
+              models={models}
+              selected={selectedModel}
+              onChange={setSelectedModel}
+              loading={modelsLoading}
+              error={modelsError}
+            />
+          </div>
+
+          <div className="top-bar-actions">
+            <button
+              type="button"
+              className="theme-toggle"
+              onClick={() => setTheme((value) => (value === "dark" ? "light" : "dark"))}
+              title="Toggle theme"
+            >
+              {theme === "dark" ? "Light" : "Dark"}
             </button>
-          )}
+            {modelsError && (
+              <button className="retry-btn" onClick={refreshModels}>
+                Retry
+              </button>
+            )}
+          </div>
         </header>
 
         <div className="chat-scroll" ref={scrollRef}>
@@ -218,8 +235,7 @@ export default function App() {
               <div className="welcome">
                 <h1>What are we building today?</h1>
                 <p>
-                  Talking to <strong>{selectedModel || "..."}</strong> running locally via
-                  Ollama.
+                  Talking to <strong>{selectedModel || "..."}</strong> running locally via Ollama.
                 </p>
               </div>
             )}
@@ -258,6 +274,3 @@ export default function App() {
     </div>
   );
 }
-
-
-

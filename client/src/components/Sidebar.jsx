@@ -13,7 +13,7 @@ export default function Sidebar({
     <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>
       <div className="sidebar-top">
         <button className="icon-btn collapse-btn" onClick={onToggleCollapsed} title="Toggle sidebar">
-          Menu
+          {collapsed ? "Open" : "Hide"}
         </button>
         {!collapsed && (
           <button className="new-chat-btn" onClick={onNewChat}>
@@ -40,7 +40,7 @@ export default function Sidebar({
                   onDelete(c.id);
                 }}
               >
-                Delete
+                Del
               </button>
             </div>
           ))}
